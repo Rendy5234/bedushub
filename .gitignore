@@ -57,3 +57,13 @@ Homestead.yaml
 # === CLINE SYMLINK (dibuat ulang saat setup) ===
 /.cline/skills
 /.cline/skills/
+
+.github/skills/*
+.clinerules/*
+AGENTS.md
+boost.json
+memory.md
+phpstan.neon
+README.md
+.vscode/mcp.json
+.cline/*
