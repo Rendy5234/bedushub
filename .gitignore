@@ -62,8 +62,10 @@ Homestead.yaml
 .clinerules/*
 AGENTS.md
 boost.json
-memory.md
+memori.md
+memori-prototipe.md
 phpstan.neon
 README.md
 .vscode/mcp.json
 .cline/*
+skema-prototipe.txt
