@@ -34,7 +34,11 @@ class RolePolicy
 
     public function delete(AuthUser $authUser, Role $role): bool
     {
-        return $authUser->can('Delete:Role');
+        if ($role->name === 'super_admin') {
+            return false;
+        }
+
+        return ! $role->users()->exists() && $authUser->can('Delete:Role');
     }
 
     public function deleteAny(AuthUser $authUser): bool
