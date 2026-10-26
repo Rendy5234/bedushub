@@ -46,10 +46,81 @@ class InstitusiImporter extends Importer
     }
 
     /**
+     * Pre-processing data sebelum divalidasi.
+     *
+     * Excel (terutama locale Indonesia) sering membungkus seluruh baris ke dalam
+     * satu pasang tanda kutip ganda ketika ada koma di dalam sel (misalnya
+     * alamat). Parser CSV membuang kutip terluar tersebut, sehingga baris rusak
+     * terbaca sebagai satu nilai di kolom "nama" dan kolom lainnya kosong.
+     *
+     * Contoh baris rusak di file:
+     * "SMK Negeri 1 Bedus,SMK,Bojonegoro,""Jl. Raya Bedus No. 1, Bojonegoro"",aktif"
+     *
+     * Nilai yang diterima hook ini:
+     * SMK Negeri 1 Bedus,SMK,Bojonegoro,"Jl. Raya Bedus No. 1, Bojonegoro",aktif
+     */
+    public function beforeValidate(): void
+    {
+        $this->normalizeExcelCorruptedRow();
+    }
+
+    /**
+     * Pecah kembali baris yang terbungkus kutip ganda oleh Excel menjadi kolom terpisah.
+     */
+    protected function normalizeExcelCorruptedRow(): void
+    {
+        $nama = $this->data['nama'] ?? null;
+
+        if (! is_string($nama) || ! str_contains($nama, ',')) {
+            return;
+        }
+
+        // Baris rusak selalu terbaca sebagai satu kolom di "nama", sedangkan
+        // kolom lain kosong. Jika kolom lain terisi, ini baris normal.
+        if (
+            filled($this->data['jenis'] ?? null)
+            || filled($this->data['kecamatan'] ?? null)
+            || filled($this->data['alamat'] ?? null)
+        ) {
+            return;
+        }
+
+        // Escape dikosongkan agar pemecahan mengikuti RFC 4180 (tanpa escape backslash).
+        $fields = array_map(
+            fn (string $field): string => trim($field, "\" \t\n\r\0\x0B"),
+            str_getcsv(trim($nama, "\" \t\n\r\0\x0B"), ',', '"', ''),
+        );
+
+        if (count($fields) < 5) {
+            return;
+        }
+
+        // Kolom terakhir adalah status, sisa kolom setelah kecamatan adalah alamat
+        // (alamat bisa mengandung koma yang tidak dibungkus kutip oleh Excel).
+        $status = (string) array_pop($fields);
+        [$namaInstitusi, $jenis, $kecamatan] = $fields;
+        $alamat = implode(', ', array_slice($fields, 3));
+
+        $this->data['nama'] = $namaInstitusi;
+        $this->data['jenis'] = $jenis;
+        $this->data['kecamatan'] = $kecamatan;
+        $this->data['alamat'] = filled($alamat) ? $alamat : null;
+        $this->data['is_active'] = $status;
+
+        // Jalankan ulang cast kolom agar "jenis" menjadi uppercase dan
+        // "is_active" dikonversi ke boolean sebelum masuk validator.
+        $this->castData();
+    }
+
+    /**
      * Cari institusi berdasarkan nama, termasuk data yang sudah di-soft delete.
      */
     public function resolveRecord(): ?Institusi
     {
+        // Normalisasi lebih dulu agar pencarian memakai nama yang sudah bersih
+        // dan tidak membuat duplikat saat baris berasal dari Excel.
+        $this->normalizeExcelCorruptedRow();
+
         return Institusi::withTrashed()->firstOrNew([
             'nama' => (string) ($this->data['nama'] ?? ''),
         ]);
