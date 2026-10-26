@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             SkillSeeder::class,
             KategoriMinatSeeder::class,
+            InstitusiSeeder::class,
         ]);
     }
 }

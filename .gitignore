@@ -71,3 +71,4 @@ README.md
 skema-prototipe.txt
 LAPORAN_AUDIT_SKEMA.md
 storage/phpstan/*
+phpstan-*
