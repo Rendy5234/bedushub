@@ -122,15 +122,26 @@ class InstitusiImporterTest extends TestCase
         $this->assertSame('PT', str_getcsv($lines[2])[1]);
     }
 
-    public function test_validation_messages_explain_the_comma_delimiter_requirement(): void
+    public function test_validation_messages_are_short_and_do_not_mention_excel(): void
     {
         $importer = new InstitusiImporter(new Import, [], []);
         $messages = $importer->getValidationMessages();
 
-        $this->assertArrayHasKey('nama.required', $messages);
-        $this->assertArrayHasKey('jenis.required', $messages);
+        $this->assertSame(
+            'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
+            $messages['nama.required'],
+        );
+        $this->assertSame(
+            'Kolom jenis tidak ditemukan. Periksa susunan CSV.',
+            $messages['jenis.required'],
+        );
+        $this->assertSame(
+            'Jenis tidak valid. Gunakan: SMK, SMA, atau PT.',
+            $messages['jenis.in'],
+        );
 
-        $this->assertStringContainsString('koma', $messages['nama.required']);
-        $this->assertStringContainsString('koma', $messages['jenis.required']);
+        foreach ($messages as $message) {
+            $this->assertStringNotContainsString('Excel', $message);
+        }
     }
 }

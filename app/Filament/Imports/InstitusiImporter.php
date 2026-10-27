@@ -7,17 +7,11 @@ use App\Models\Institusi;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class InstitusiImporter extends Importer
 {
     protected static ?string $model = Institusi::class;
-
-    /**
-     * Batas jumlah baris berhasil yang disimpan ke snapshot di database.
-     */
-    public const MAX_SUCCESSFUL_ROWS_SNAPSHOT = 10;
 
     public static function getColumns(): array
     {
@@ -54,10 +48,10 @@ class InstitusiImporter extends Importer
     /**
      * Pre-processing data sebelum divalidasi.
      *
-     * Excel (terutama locale Indonesia) sering membungkus seluruh baris ke dalam
-     * satu pasang tanda kutip ganda ketika ada koma di dalam sel (misalnya
-     * alamat). Parser CSV membuang kutip terluar tersebut, sehingga baris rusak
-     * terbaca sebagai satu nilai di kolom "nama" dan kolom lainnya kosong.
+     * Aplikasi spreadsheet (terutama locale Indonesia) sering membungkus seluruh
+     * baris ke dalam satu pasang tanda kutip ganda ketika ada koma di dalam sel
+     * (misalnya alamat). Parser CSV membuang kutip terluar tersebut, sehingga
+     * baris rusak terbaca sebagai satu nilai di kolom "nama" dan kolom lain kosong.
      *
      * Contoh baris rusak di file:
      * "SMK Negeri 1 Bedus,SMK,Bojonegoro,""Jl. Raya Bedus No. 1, Bojonegoro"",aktif"
@@ -67,13 +61,13 @@ class InstitusiImporter extends Importer
      */
     public function beforeValidate(): void
     {
-        $this->normalizeExcelCorruptedRow();
+        $this->normalizeCorruptedRow();
     }
 
     /**
-     * Pecah kembali baris yang terbungkus kutip ganda oleh Excel menjadi kolom terpisah.
+     * Pecah kembali baris yang terbungkus kutip ganda menjadi kolom terpisah.
      */
-    protected function normalizeExcelCorruptedRow(): void
+    protected function normalizeCorruptedRow(): void
     {
         $nama = $this->data['nama'] ?? null;
 
@@ -102,7 +96,7 @@ class InstitusiImporter extends Importer
         }
 
         // Kolom terakhir adalah status, sisa kolom setelah kecamatan adalah alamat
-        // (alamat bisa mengandung koma yang tidak dibungkus kutip oleh Excel).
+        // (alamat bisa mengandung koma yang tidak dibungkus kutip oleh spreadsheet).
         $status = (string) array_pop($fields);
         [$namaInstitusi, $jenis, $kecamatan] = $fields;
         $alamat = implode(', ', array_slice($fields, 3));
@@ -124,8 +118,8 @@ class InstitusiImporter extends Importer
     public function resolveRecord(): ?Institusi
     {
         // Normalisasi lebih dulu agar pencarian memakai nama yang sudah bersih
-        // dan tidak membuat duplikat saat baris berasal dari Excel.
-        $this->normalizeExcelCorruptedRow();
+        // dan tidak membuat duplikat saat baris rusak.
+        $this->normalizeCorruptedRow();
 
         return Institusi::withTrashed()->firstOrNew([
             'nama' => (string) ($this->data['nama'] ?? ''),
@@ -143,76 +137,16 @@ class InstitusiImporter extends Importer
     }
 
     /**
-     * Simpan snapshot (Nama, Jenis, Kecamatan) dari setiap baris yang berhasil
-     * dibuat ke kolom JSON `successful_row_data` pada model Import, sehingga
-     * modal "Hasil Import" dapat menampilkannya tanpa harus scan tabel institusi
-     * secara keseluruhan.
-     *
-     * Snapshot dibatasi pada 10 baris terbaru untuk menjaga ukuran JSON kecil.
-     */
-    public function afterCreate(): void
-    {
-        $this->recordSuccessfulRow();
-    }
-
-    public function afterUpdate(): void
-    {
-        $this->recordSuccessfulRow();
-    }
-
-    /**
-     * Tambahkan data baris yang sukses ke snapshot, lalu simpan model Import.
-     */
-    protected function recordSuccessfulRow(): void
-    {
-        if (! $this->record instanceof Institusi) {
-            return;
-        }
-
-        $jenisLabel = $this->record->jenis instanceof JenisInstitusi
-            ? $this->record->jenis->getLabel()
-            : (string) $this->record->jenis;
-
-        $row = [
-            'nama' => (string) $this->record->nama,
-            'jenis' => $jenisLabel,
-            'kecamatan' => (string) ($this->record->kecamatan ?? '-'),
-        ];
-
-        /** @var Collection<int, array{nama: string, jenis: string, kecamatan: string}> $rows */
-        $rows = collect($this->import->successful_row_data ?? [])
-            ->filter(fn ($item): bool => is_array($item))
-            ->values();
-
-        $rows->push($row);
-
-        if ($rows->count() > self::MAX_SUCCESSFUL_ROWS_SNAPSHOT) {
-            $rows = $rows->skip(max(0, $rows->count() - self::MAX_SUCCESSFUL_ROWS_SNAPSHOT))->values();
-        }
-
-        $this->import->successful_row_data = $rows->toJson();
-
-        // Simpan snapshot hanya saat model Import memang sudah ada di basis data.
-        // Pada mode TestableImport (unit test) model belum pernah disimpan, sehingga
-        // save() akan gagal akibat kolom NOT NULL seperti file_name.
-        if ($this->import->exists) {
-            $this->import->timestamps = false;
-            $this->import->updated_at = $this->import->updated_at ?? now();
-            $this->import->save();
-        }
-    }
-
-    /**
-     * Pesan validasi yang menjelaskan penyebab umum kegagalan import (CSV rusak/Excel).
+     * Pesan validasi yang singkat dan netral untuk kegagalan import CSV.
      *
      * @return array<string, string>
      */
     public function getValidationMessages(): array
     {
         return [
-            'nama.required' => 'Kolom "nama" tidak terbaca pada baris ini. Pastikan file CSV dipisahkan dengan koma (,), bukan titik koma (;), dan tidak disimpan ulang menggunakan Microsoft Excel.',
-            'jenis.required' => 'Kolom "jenis" tidak terbaca pada baris ini. Pastikan file CSV dipisahkan dengan koma (,), setiap baris berisi 5 kolom (nama, jenis, kecamatan, alamat, status), dan tidak diedit menggunakan Microsoft Excel.',
-            'jenis.in' => 'Nilai kolom "jenis" tidak valid. Gunakan salah satu: SMK, SMA, atau PT.',
+            'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
+            'jenis.required' => 'Kolom jenis tidak ditemukan. Periksa susunan CSV.',
+            'jenis.in' => 'Jenis tidak valid. Gunakan: SMK, SMA, atau PT.',
             'kecamatan.max' => 'Kolom "kecamatan" maksimal 255 karakter.',
             'alamat.max' => 'Kolom "alamat" maksimal 255 karakter.',
         ];

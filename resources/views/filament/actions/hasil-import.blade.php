@@ -1,116 +1,113 @@
-@php
-    /** @var \Filament\Actions\Imports\Models\Import|null $import */
-    /** @var \Illuminate\Support\Collection<int, mixed> $failedRows */
-    /** @var \Illuminate\Support\Collection<int, array{nama: string, jenis: string, kecamatan: string}> $successfulRows */
-@endphp
-
-@if(! $import || ! $import->completed_at)
-    <div style="padding: 16px; text-align: center;">
-        <p style="font-size: 14px; color: #6b7280;">
+<style>
+    .custom-modal-text { color: #1f2937; }
+    .dark .custom-modal-text { color: #f3f4f6 !important; }
+</style>
+<div class="custom-modal-text" style="padding: 20px 8px; font-size: 14px; line-height: 1.5;">
+    @if(! $import || ! $import->completed_at)
+        <p style="font-size: 14px; color: #9ca3af;">
             Belum ada riwayat import institusi.
         </p>
-    </div>
-@else
-    {{-- === Statistik Ringkas === --}}
-    @php
-        $completedDate = $import->completed_at
-            ? \Illuminate\Support\Carbon::parse($import->completed_at)->translatedFormat('d M Y H:i')
-            : '-';
-    @endphp
-    <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
-        <div>
-            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Waktu Selesai</div>
-            <div style="font-size: 15px; font-weight: 600; color: #111827;">{{ $completedDate }}</div>
-        </div>
-        <div>
-            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Total Baris</div>
-            <div style="font-size: 15px; font-weight: 600; color: #111827;">
-                {{ number_format((float) $import->total_rows, 0, ',', '.') }}
-            </div>
-        </div>
-        <div>
-            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Berhasil</div>
-            <div style="font-size: 15px; font-weight: 600; color: #059e37;">
-                {{ number_format((float) $import->successful_rows, 0, ',', '.') }}
-            </div>
-        </div>
-        <div>
-            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Gagal</div>
-            <div style="font-size: 15px; font-weight: 600; color: #dc2626;">
-                {{ number_format((float) ($import->total_rows - $import->successful_rows), 0, ',', '.') }}
-            </div>
-        </div>
-    </div>
+    @else
+        @php
+            $completedDate = $import->completed_at
+                ? \Illuminate\Support\Carbon::parse($import->completed_at)->translatedFormat('d M Y H:i')
+                : '-';
+        @endphp
 
-    {{-- === Data Berhasil Diproses === --}}
-    <div style="margin-top: 24px;">
-        <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 12px;">
-            Data Berhasil Diproses
-        </h3>
+        <div style="display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap;">
+            <div>
+                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Waktu Selesai</div>
+                <div style="font-size: 15px; font-weight: 600;">{{ $completedDate }}</div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Total Baris</div>
+                <div style="font-size: 15px; font-weight: 600;">
+                    {{ number_format((float) $import->total_rows, 0, ',', '.') }}
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Berhasil</div>
+                <div style="font-size: 15px; font-weight: 600;">
+                    {{ number_format((float) $import->successful_rows, 0, ',', '.') }}
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Gagal</div>
+                <div style="font-size: 15px; font-weight: 600;">
+                    {{ number_format((float) ($import->total_rows - $import->successful_rows), 0, ',', '.') }}
+                </div>
+            </div>
+        </div>
 
-        @if($successfulRows->isNotEmpty())
-            <div style="max-height: 300px; overflow-y: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Nama</th>
-                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Jenis</th>
-                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Kecamatan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($successfulRows as $row)
+        @if($failedRows && $failedRows->isNotEmpty())
+            <div style="margin-top: 16px;">
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 12px;">Data Gagal</h3>
+
+                {{-- Scroll ke samping di layar kecil (mobile) --}}
+                <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table style="width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px;">
+                        <thead>
                             <tr>
-                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['nama'] }}</td>
-                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['jenis'] }}</td>
-                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['kecamatan'] }}</td>
+                                <th style="padding: 10px 12px; border-bottom: 1px solid rgba(107, 114, 128, 0.35); text-align: left; font-weight: 600; width: 40%;">Data Asli</th>
+                                <th style="padding: 10px 12px; border-bottom: 1px solid rgba(107, 114, 128, 0.35); text-align: left; font-weight: 600; width: 60%;">Pesan Error</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach($failedRows as $row)
+                                <tr>
+                                    <td style="padding: 10px 12px; border-bottom: 1px solid rgba(107, 114, 128, 0.35); text-align: left; vertical-align: top; word-break: break-all;">
+                                        {{ array_values($row->data ?? [])[0] ?? '-' }}
+                                    </td>
+                                    <td style="padding: 10px 12px; border-bottom: 1px solid rgba(107, 114, 128, 0.35); text-align: left; vertical-align: top;">
+                                        <ul style="margin: 0; font-size: 13px; line-height: 1.6;">
+                                            <li>{{ $row->validation_error ?? 'Validasi gagal.' }}</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Navigasi halaman (server-side, tanpa Alpine.js).
+                     Menggunakan LengthAwarePaginator standar Laravel: onFirstPage(),
+                     hasMorePages(), previousPageUrl()/nextPageUrl(). --}}
+                @php
+                    $navStyle = 'display: inline-block; padding: 6px 14px; border: 1px solid rgba(107, 114, 128, 0.45); border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none; color: inherit;';
+                    $navDisabledStyle = $navStyle.' opacity: .45; cursor: not-allowed;';
+                @endphp
+
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+                    @if($failedRows->onFirstPage())
+                        <span style="{{ $navDisabledStyle }}" aria-disabled="true">Sebelumnya</span>
+                    @else
+                        <a
+                            href="{{ $failedRows->previousPageUrl() }}"
+                            wire:click.prevent="previousHasilImportPage"
+                            style="{{ $navStyle }}">Sebelumnya</a>
+                    @endif
+
+                    <span style="font-size: 12px; color: #9ca3af;">
+                        Halaman {{ $failedRows->currentPage() }} dari {{ $failedRows->lastPage() }}
+                        &middot;
+                        Menampilkan {{ $failedRows->firstItem() ?? 0 }}-{{ $failedRows->lastItem() ?? 0 }}
+                        dari {{ $failedRows->total() }} baris
+                    </span>
+
+                    @if($failedRows->hasMorePages())
+                        <a
+                            href="{{ $failedRows->nextPageUrl() }}"
+                            wire:click.prevent="nextHasilImportPage"
+                            style="{{ $navStyle }}">Berikutnya</a>
+                    @else
+                        <span style="{{ $navDisabledStyle }}" aria-disabled="true">Berikutnya</span>
+                    @endif
+                </div>
             </div>
         @else
-            <p style="font-size: 14px; color: #6b7280;">
-                Belum ada data berhasil.
-            </p>
-        @endif
-    </div>
-
-    {{-- === Data Gagal === --}}
-    <div style="margin-top: 24px;">
-        @if($failedRows->isNotEmpty())
-            <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 12px;">Data Gagal</h3>
-            <div style="max-height: 300px; overflow-y: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Data Asli</th>
-                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Pesan Error</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($failedRows as $failedRow)
-                            <tr>
-                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827; vertical-align: top;">
-                                    @php
-                                        $data = is_array($failedRow->data)
-                                            ? $failedRow->data
-                                            : json_decode((string) $failedRow->data, true);
-                                    @endphp
-                                    <pre style="white-space: pre-wrap; font-size: 13px; color: #111827; margin: 0;">{{ json_encode($data, JSON_PRETTY_PRINT) }}</pre>
-                                </td>
-                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827; vertical-align: top;">
-                                    <p style="font-size: 14px; color: #111827; margin: 0;">{{ $failedRow->validation_error ?? 'Validasi gagal.' }}</p>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <p style="font-size: 14px; color: #6b7280;">
+            <p style="font-size: 14px; color: #9ca3af;">
                 Tidak ada data gagal.
             </p>
         @endif
-    </div>
-@endif
+    @endif
+</div>
