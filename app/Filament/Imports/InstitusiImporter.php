@@ -7,11 +7,17 @@ use App\Models\Institusi;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class InstitusiImporter extends Importer
 {
     protected static ?string $model = Institusi::class;
+
+    /**
+     * Batas jumlah baris berhasil yang disimpan ke snapshot di database.
+     */
+    public const MAX_SUCCESSFUL_ROWS_SNAPSHOT = 10;
 
     public static function getColumns(): array
     {
@@ -133,6 +139,66 @@ class InstitusiImporter extends Importer
     {
         if ($this->record instanceof Institusi && $this->record->trashed()) {
             $this->record->restore();
+        }
+    }
+
+    /**
+     * Simpan snapshot (Nama, Jenis, Kecamatan) dari setiap baris yang berhasil
+     * dibuat ke kolom JSON `successful_row_data` pada model Import, sehingga
+     * modal "Hasil Import" dapat menampilkannya tanpa harus scan tabel institusi
+     * secara keseluruhan.
+     *
+     * Snapshot dibatasi pada 10 baris terbaru untuk menjaga ukuran JSON kecil.
+     */
+    public function afterCreate(): void
+    {
+        $this->recordSuccessfulRow();
+    }
+
+    public function afterUpdate(): void
+    {
+        $this->recordSuccessfulRow();
+    }
+
+    /**
+     * Tambahkan data baris yang sukses ke snapshot, lalu simpan model Import.
+     */
+    protected function recordSuccessfulRow(): void
+    {
+        if (! $this->record instanceof Institusi) {
+            return;
+        }
+
+        $jenisLabel = $this->record->jenis instanceof JenisInstitusi
+            ? $this->record->jenis->getLabel()
+            : (string) $this->record->jenis;
+
+        $row = [
+            'nama' => (string) $this->record->nama,
+            'jenis' => $jenisLabel,
+            'kecamatan' => (string) ($this->record->kecamatan ?? '-'),
+        ];
+
+        /** @var Collection<int, array{nama: string, jenis: string, kecamatan: string}> $rows */
+        $rows = collect($this->import->successful_row_data ?? [])
+            ->filter(fn ($item): bool => is_array($item))
+            ->values();
+
+        $rows->push($row);
+
+        if ($rows->count() > self::MAX_SUCCESSFUL_ROWS_SNAPSHOT) {
+            $rows = $rows->skip(max(0, $rows->count() - self::MAX_SUCCESSFUL_ROWS_SNAPSHOT))->values();
+        }
+
+        $this->import->successful_row_data = $rows->toJson();
+
+        // Simpan snapshot hanya saat model Import memang sudah ada di basis data.
+        // Pada mode TestableImport (unit test) model belum pernah disimpan, sehingga
+        // save() akan gagal akibat kolom NOT NULL seperti file_name.
+        if ($this->import->exists) {
+            $this->import->timestamps = false;
+            $this->import->updated_at = $this->import->updated_at ?? now();
+            $this->import->save();
         }
     }
 

@@ -46,6 +46,12 @@ class ListInstitusi extends ListRecords
                     return view('filament.actions.hasil-import', [
                         'import' => $import,
                         'failedRows' => $import?->failedRows()->latest()->limit(10)->get(),
+                        'successfulRows' => collect(json_decode(
+                            $import?->successful_row_data ?? '[]',
+                            true,
+                            512,
+                            JSON_THROW_ON_ERROR,
+                        ))->filter(fn ($row): bool => is_array($row))->values(),
                     ]);
                 })
                 ->modalSubmitAction(false)

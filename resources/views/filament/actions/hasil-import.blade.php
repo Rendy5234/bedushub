@@ -1,99 +1,116 @@
 @php
     /** @var \Filament\Actions\Imports\Models\Import|null $import */
-    /** @var \Illuminate\Support\Collection<int, \Filament\Actions\Imports\Models\FailedImportRow>|null $failedRows */
-
-    // Kolom completed_at pada model Import memakai cast "timestamp", sehingga bertipe int (Unix timestamp), bukan Carbon.
-    $completedAt = $import?->completed_at !== null
-        ? \Illuminate\Support\Carbon::createFromTimestamp((int) $import->completed_at)
-        : null;
+    /** @var \Illuminate\Support\Collection<int, mixed> $failedRows */
+    /** @var \Illuminate\Support\Collection<int, array{nama: string, jenis: string, kecamatan: string}> $successfulRows */
 @endphp
 
-<div style="display: flex; flex-direction: column; gap: 1.25rem;">
-    @if ($import === null)
-        <p style="font-size: 0.875rem; line-height: 1.5; color: #6b7280;">
-            Belum ada riwayat import institusi. Silakan gunakan tombol <strong>Import Institusi</strong> untuk
-            mengunggah berkas CSV terlebih dahulu.
+@if(! $import || ! $import->completed_at)
+    <div style="padding: 16px; text-align: center;">
+        <p style="font-size: 14px; color: #6b7280;">
+            Belum ada riwayat import institusi.
         </p>
-    @else
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
-            <div style="display: flex; flex-direction: column; gap: 0.125rem; min-width: 0;">
-                <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280;">
-                    Berkas
-                </span>
-                <span style="font-size: 0.875rem; font-weight: 600; color: #111827; word-break: break-all;">
-                    {{ $import->file_name }}
-                </span>
-            </div>
-
-            @if ($import->completed_at === null)
-                <span style="flex-shrink: 0; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background-color: #fef3c7; color: #92400e;">
-                    Sedang diproses
-                </span>
-            @else
-                <span style="flex-shrink: 0; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; background-color: #d1fae5; color: #065f46;">
-                    Selesai
-                </span>
-            @endif
+    </div>
+@else
+    {{-- === Statistik Ringkas === --}}
+    @php
+        $completedDate = $import->completed_at
+            ? \Illuminate\Support\Carbon::parse($import->completed_at)->translatedFormat('d M Y H:i')
+            : '-';
+    @endphp
+    <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div>
+            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Waktu Selesai</div>
+            <div style="font-size: 15px; font-weight: 600; color: #111827;">{{ $completedDate }}</div>
         </div>
-
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
-            <tbody>
-                <tr>
-                    <td style="padding: 0.5rem 0; color: #6b7280; width: 55%;">Waktu Selesai</td>
-                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 600; color: #111827;">
-                        {{ $completedAt?->translatedFormat('d M Y H:i') ?? '-' }}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.5rem 0; color: #6b7280; border-top: 1px solid #e5e7eb;">Total Baris</td>
-                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 600; color: #111827; border-top: 1px solid #e5e7eb;">
-                        {{ number_format($import->total_rows, 0, ',', '.') }}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.5rem 0; color: #6b7280; border-top: 1px solid #e5e7eb;">Berhasil</td>
-                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 600; color: #047857; border-top: 1px solid #e5e7eb;">
-                        {{ number_format($import->successful_rows, 0, ',', '.') }}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 0.5rem 0; color: #6b7280; border-top: 1px solid #e5e7eb;">Gagal</td>
-                    <td style="padding: 0.5rem 0; text-align: right; font-weight: 600; color: {{ $import->getFailedRowsCount() > 0 ? '#b91c1c' : '#111827' }}; border-top: 1px solid #e5e7eb;">
-                        {{ number_format($import->getFailedRowsCount(), 0, ',', '.') }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        @if ($failedRows !== null && $failedRows->isNotEmpty())
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <span style="font-size: 0.875rem; font-weight: 600; color: #111827;">
-                    Baris Gagal (maksimal 10 terakhir)
-                </span>
-
-                <div style="max-height: 16rem; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
-                        <thead>
-                            <tr style="background-color: #f9fafb; text-align: left;">
-                                <th style="padding: 0.5rem; color: #6b7280; font-weight: 600; width: 45%;">Data</th>
-                                <th style="padding: 0.5rem; color: #6b7280; font-weight: 600;">Kesalahan</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($failedRows as $failedRow)
-                                <tr>
-                                    <td style="padding: 0.5rem; border-top: 1px solid #e5e7eb; color: #374151; word-break: break-word;">
-                                        {{ json_encode($failedRow->data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}
-                                    </td>
-                                    <td style="padding: 0.5rem; border-top: 1px solid #e5e7eb; color: #b91c1c; word-break: break-word;">
-                                        {{ $failedRow->validation_error ?? 'Tidak diketahui' }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+        <div>
+            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Total Baris</div>
+            <div style="font-size: 15px; font-weight: 600; color: #111827;">
+                {{ number_format((float) $import->total_rows, 0, ',', '.') }}
             </div>
+        </div>
+        <div>
+            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Berhasil</div>
+            <div style="font-size: 15px; font-weight: 600; color: #059e37;">
+                {{ number_format((float) $import->successful_rows, 0, ',', '.') }}
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">Gagal</div>
+            <div style="font-size: 15px; font-weight: 600; color: #dc2626;">
+                {{ number_format((float) ($import->total_rows - $import->successful_rows), 0, ',', '.') }}
+            </div>
+        </div>
+    </div>
+
+    {{-- === Data Berhasil Diproses === --}}
+    <div style="margin-top: 24px;">
+        <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 12px;">
+            Data Berhasil Diproses
+        </h3>
+
+        @if($successfulRows->isNotEmpty())
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Nama</th>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Jenis</th>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Kecamatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($successfulRows as $row)
+                            <tr>
+                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['nama'] }}</td>
+                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['jenis'] }}</td>
+                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827;">{{ $row['kecamatan'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p style="font-size: 14px; color: #6b7280;">
+                Belum ada data berhasil.
+            </p>
         @endif
-    @endif
-</div>
+    </div>
+
+    {{-- === Data Gagal === --}}
+    <div style="margin-top: 24px;">
+        @if($failedRows->isNotEmpty())
+            <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 12px;">Data Gagal</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Data Asli</th>
+                            <th style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-weight: 600; color: #374151; background-color: #f9fafb;">Pesan Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($failedRows as $failedRow)
+                            <tr>
+                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827; vertical-align: top;">
+                                    @php
+                                        $data = is_array($failedRow->data)
+                                            ? $failedRow->data
+                                            : json_decode((string) $failedRow->data, true);
+                                    @endphp
+                                    <pre style="white-space: pre-wrap; font-size: 13px; color: #111827; margin: 0;">{{ json_encode($data, JSON_PRETTY_PRINT) }}</pre>
+                                </td>
+                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: left; color: #111827; vertical-align: top;">
+                                    <p style="font-size: 14px; color: #111827; margin: 0;">{{ $failedRow->validation_error ?? 'Validasi gagal.' }}</p>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p style="font-size: 14px; color: #6b7280;">
+                Tidak ada data gagal.
+            </p>
+        @endif
+    </div>
+@endif

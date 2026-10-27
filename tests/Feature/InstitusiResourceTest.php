@@ -72,6 +72,7 @@ class InstitusiResourceTest extends TestCase
         $html = view('filament.actions.hasil-import', [
             'import' => $import,
             'failedRows' => collect(),
+            'successfulRows' => collect(),
         ])->render();
 
         $expectedDate = Carbon::createFromTimestamp((int) $import->completed_at)
