@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
@@ -41,5 +42,21 @@ class Fakultas extends Model
     public function institusi(): BelongsTo
     {
         return $this->belongsTo(Institusi::class, 'institusi_id', 'id');
+    }
+
+    /**
+     * @return HasMany<ProgramStudi, $this>
+     */
+    public function programStudis(): HasMany
+    {
+        return $this->hasMany(ProgramStudi::class, 'fakultas_id', 'id');
+    }
+
+    /**
+     * Cek apakah fakultas masih dipakai oleh Program Studi.
+     */
+    public function hasProgramStudi(): bool
+    {
+        return $this->programStudis()->exists();
     }
 }

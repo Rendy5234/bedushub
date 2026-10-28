@@ -24,6 +24,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -114,6 +115,10 @@ class InstitusiResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('jenis')
+                    ->label('Jenis Institusi')
+                    ->options(JenisInstitusi::class)
+                    ->native(false),
                 TernaryFilter::make('is_active')
                     ->label('Status Aktif'),
                 TrashedFilter::make(),
