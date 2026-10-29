@@ -31,6 +31,8 @@ use Filament\Tables\Table;
 
 class InstitusiResource extends Resource
 {
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $model = Institusi::class;
 
     protected static ?string $recordTitleAttribute = 'nama';

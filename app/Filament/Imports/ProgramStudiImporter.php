@@ -7,6 +7,7 @@ use App\Models\ProgramStudi;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Validation\Rule;
 
 class ProgramStudiImporter extends Importer
 {
@@ -26,10 +27,10 @@ class ProgramStudiImporter extends Importer
                 ->label('Jenjang')
                 ->requiredMapping()
                 ->rules(['required', 'string', 'in:D3,S1,S2,S3']),
-            ImportColumn::make('fakultas_nama')
+            ImportColumn::make('fakultas_id')
                 ->label('Fakultas')
                 ->requiredMapping()
-                ->rules(['required', 'string', 'max:255'])
+                ->rules(['required', 'string', 'max:255', Rule::exists('fakultas', 'id')])
                 ->castStateUsing(function (mixed $state): ?string {
                     if (! filled($state)) {
                         return null;
@@ -73,15 +74,15 @@ class ProgramStudiImporter extends Importer
         if (
             filled($this->data['kode'] ?? null)
             || filled($this->data['jenjang'] ?? null)
-            || filled($this->data['fakultas_nama'] ?? null)
+            || filled($this->data['fakultas_id'] ?? null)
         ) {
             return;
         }
 
         // Escape dikosongkan agar pemecahan mengikuti RFC 4180 (tanpa escape backslash).
         $fields = array_map(
-            fn (string $field): string => trim($field, "\" \t\n\r\0\x0B"),
-            str_getcsv(trim($nama, "\" \t\n\r\0\x0B"), ',', '"', ''),
+            fn (string $field): string => trim($field, "\"\t\n\r\0\x0B"),
+            str_getcsv(trim($nama, "\"\t\n\r\0\x0B"), ',', '"', ''),
         );
 
         if (count($fields) < 4) {
@@ -93,7 +94,7 @@ class ProgramStudiImporter extends Importer
         $this->data['nama'] = $namaProdi;
         $this->data['kode'] = filled($kode) ? $kode : null;
         $this->data['jenjang'] = $jenjang;
-        $this->data['fakultas_nama'] = $fakultasNama;
+        $this->data['fakultas_id'] = $fakultasNama;
 
         // Jalankan ulang cast kolom sebelum masuk validator.
         $this->castData();
@@ -108,11 +109,14 @@ class ProgramStudiImporter extends Importer
         // dan tidak membuat duplikat saat baris rusak.
         $this->normalizeCorruptedRow();
 
-        $fakultasId = (string) ($this->data['fakultas_nama'] ?? '');
+        $fakultasId = $this->data['fakultas_id'] ?? null;
 
+        // Relasi yang tidak ditemukan tetap menghasilkan record baru dengan
+        // foreign key null. Baris tersebut lalu gagal di tahap validasi dan
+        // tercatat di Failed Rows, bukan melempar exception.
         return ProgramStudi::withTrashed()->firstOrNew([
             'nama' => (string) ($this->data['nama'] ?? ''),
-            'fakultas_id' => $fakultasId,
+            'fakultas_id' => filled($fakultasId) ? (string) $fakultasId : null,
         ]);
     }
 
@@ -135,7 +139,8 @@ class ProgramStudiImporter extends Importer
     {
         return [
             'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
-            'fakultas_nama.required' => 'Kolom fakultas tidak ditemukan. Periksa susunan CSV.',
+            'fakultas_id.required' => 'Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.',
+            'fakultas_id.exists' => 'Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.',
             'jenjang.required' => 'Kolom jenjang tidak ditemukan. Periksa susunan CSV.',
             'jenjang.in' => 'Jenjang tidak valid. Gunakan: D3, S1, S2, atau S3.',
         ];

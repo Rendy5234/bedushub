@@ -7,6 +7,7 @@ use App\Models\Institusi;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Validation\Rule;
 
 class FakultasImporter extends Importer
 {
@@ -19,10 +20,10 @@ class FakultasImporter extends Importer
                 ->label('Nama Fakultas')
                 ->requiredMapping()
                 ->rules(['required', 'string', 'max:255']),
-            ImportColumn::make('institusi_nama')
+            ImportColumn::make('institusi_id')
                 ->label('Institusi')
                 ->requiredMapping()
-                ->rules(['required', 'string', 'max:255'])
+                ->rules(['required', 'string', 'max:255', Rule::exists('institusi', 'id')])
                 ->castStateUsing(function (mixed $state): ?string {
                     if (! filled($state)) {
                         return null;
@@ -63,14 +64,14 @@ class FakultasImporter extends Importer
 
         // Baris rusak selalu terbaca sebagai satu kolom di "nama", sedangkan
         // kolom lain kosong. Jika kolom lain terisi, ini baris normal.
-        if (filled($this->data['institusi_nama'] ?? null)) {
+        if (filled($this->data['institusi_id'] ?? null)) {
             return;
         }
 
         // Escape dikosongkan agar pemecahan mengikuti RFC 4180 (tanpa escape backslash).
         $fields = array_map(
-            fn (string $field): string => trim($field, "\" \t\n\r\0\x0B"),
-            str_getcsv(trim($nama, "\" \t\n\r\0\x0B"), ',', '"', ''),
+            fn (string $field): string => trim($field, "\"\t\n\r\0\x0B"),
+            str_getcsv(trim($nama, "\"\t\n\r\0\x0B"), ',', '"', ''),
         );
 
         if (count($fields) < 2) {
@@ -80,7 +81,7 @@ class FakultasImporter extends Importer
         [$namaFakultas, $institusiNama] = $fields;
 
         $this->data['nama'] = $namaFakultas;
-        $this->data['institusi_nama'] = $institusiNama;
+        $this->data['institusi_id'] = $institusiNama;
 
         // Jalankan ulang cast kolom sebelum masuk validator.
         $this->castData();
@@ -95,11 +96,14 @@ class FakultasImporter extends Importer
         // dan tidak membuat duplikat saat baris rusak.
         $this->normalizeCorruptedRow();
 
-        $institusiId = (string) ($this->data['institusi_nama'] ?? '');
+        $institusiId = $this->data['institusi_id'] ?? null;
 
+        // Relasi yang tidak ditemukan tetap menghasilkan record baru dengan
+        // foreign key null. Baris tersebut lalu gagal di tahap validasi dan
+        // tercatat di Failed Rows, bukan melempar exception.
         return Fakultas::withTrashed()->firstOrNew([
             'nama' => (string) ($this->data['nama'] ?? ''),
-            'institusi_id' => $institusiId,
+            'institusi_id' => filled($institusiId) ? (string) $institusiId : null,
         ]);
     }
 
@@ -122,7 +126,8 @@ class FakultasImporter extends Importer
     {
         return [
             'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
-            'institusi_nama.required' => 'Kolom institusi tidak ditemukan. Periksa susunan CSV.',
+            'institusi_id.required' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
+            'institusi_id.exists' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
         ];
     }
 
