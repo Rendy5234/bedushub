@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Fakultas;
 use App\Filament\Resources\Fakultas\Pages\CreateFakultas;
 use App\Filament\Resources\Fakultas\Pages\EditFakultas;
 use App\Filament\Resources\Fakultas\Pages\ListFakultas;
+use App\Filament\Resources\Fakultas\Pages\ViewFakultas;
 use App\Filament\Resources\Fakultas\Schemas\FakultasForm;
 use App\Filament\Resources\Fakultas\Tables\FakultasTable;
 use App\Models\Fakultas;
@@ -58,6 +59,7 @@ class FakultasResource extends Resource
             'index' => ListFakultas::route('/'),
             'create' => CreateFakultas::route('/create'),
             'edit' => EditFakultas::route('/{record}/edit'),
+            'view' => ViewFakultas::route('/{record}'),
         ];
     }
 

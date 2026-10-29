@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\JenisInstitusi;
 use App\Filament\Imports\InstitusiImporter;
-use App\Filament\Resources\InstitusiResource\Pages\ListInstitusi;
+use App\Filament\Resources\Institusi\Pages\ListInstitusi;
 use App\Models\Fakultas;
 use App\Models\Institusi;
 use App\Models\User;

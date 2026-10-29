@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Fakultas\Tables;
 
 use App\Filament\Resources\Fakultas\FakultasResource;
+use App\Models\Fakultas;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -11,6 +12,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -44,6 +46,8 @@ class FakultasTable
                 ? null
                 : FakultasResource::getUrl('edit', ['record' => $record]))
             ->recordActions([
+                ViewAction::make()
+                    ->hidden(fn (Fakultas $record): bool => $record->trashed()),
                 EditAction::make()
                     ->hidden(fn ($record): bool => $record->trashed()),
                 DeleteAction::make()
