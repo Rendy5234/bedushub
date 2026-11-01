@@ -18,19 +18,23 @@ use UnitEnum;
 
 class KategoriMinatResource extends Resource
 {
+    protected static ?int $navigationSort = 4;
+    
     protected static ?string $model = KategoriMinat::class;
 
     protected static ?string $recordTitleAttribute = 'nama';
+
+    protected static ?string $modelLabel = 'Kategori Minat';
+
+    protected static ?string $pluralModelLabel = 'Kategori Minat';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
 
     protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
-    /**
-     * Slug eksplisit supaya URL dan nama route tetap `admin/kategori-minats`
-     * meskipun Resource berada di dalam folder `KategoriMinat/`.
-     */
-    protected static ?string $slug = 'kategori-minats';
+    protected static ?string $navigationLabel = 'Kategori Minat';
+
+    protected static ?string $slug = 'kategori-minat';
 
     public static function form(Schema $schema): Schema
     {

@@ -32,6 +32,8 @@ class FakultasResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $navigationLabel = 'Fakultas';
 
     protected static ?string $slug = 'fakultas';

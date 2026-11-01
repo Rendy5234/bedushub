@@ -22,14 +22,18 @@ class SkillResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'nama';
 
+    protected static ?string $modelLabel = 'Skill';
+
+    protected static ?string $pluralModelLabel = 'Skills';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
     protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
-    /**
-     * Slug eksplisit supaya URL dan nama route tetap `admin/skills`
-     * meskipun Resource berada di dalam folder `Skill/`.
-     */
+    protected static ?int $navigationSort = 5;
+
+    protected static ?string $navigationLabel = 'Skills';
+
     protected static ?string $slug = 'skills';
 
     public static function form(Schema $schema): Schema

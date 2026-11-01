@@ -32,6 +32,8 @@ class ProgramStudiResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationLabel = 'Program Studi';
 
     protected static ?string $slug = 'program-studi';
