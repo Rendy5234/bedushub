@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Institusi\Schemas;
 
 use App\Enums\JenisInstitusi;
+use App\Models\Institusi;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -23,7 +24,8 @@ class InstitusiForm
                             TextInput::make('nama')
                                 ->label('Nama Institusi')
                                 ->required()
-                                ->maxLength(255),
+                                ->maxLength(255)
+                                ->unique(Institusi::class, 'nama', ignoreRecord: true),
                             Select::make('jenis')
                                 ->label('Jenis Institusi')
                                 ->options(JenisInstitusi::class)

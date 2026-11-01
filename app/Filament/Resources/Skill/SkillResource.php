@@ -24,7 +24,7 @@ class SkillResource extends Resource
 
     protected static ?string $modelLabel = 'Skill';
 
-    protected static ?string $pluralModelLabel = 'Skills';
+    protected static ?string $pluralModelLabel = 'Skill';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCpuChip;
 
@@ -32,9 +32,9 @@ class SkillResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
-    protected static ?string $navigationLabel = 'Skills';
+    protected static ?string $navigationLabel = 'Skill';
 
-    protected static ?string $slug = 'skills';
+    protected static ?string $slug = 'skill';
 
     public static function form(Schema $schema): Schema
     {

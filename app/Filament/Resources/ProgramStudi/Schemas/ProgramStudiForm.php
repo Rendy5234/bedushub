@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\ProgramStudi\Schemas;
 
+use App\Models\ProgramStudi;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 class ProgramStudiForm
 {
@@ -15,7 +18,13 @@ class ProgramStudiForm
                 TextInput::make('nama')
                     ->label('Nama Program Studi')
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->unique(
+                        ProgramStudi::class,
+                        'nama',
+                        ignoreRecord: true,
+                        modifyRuleUsing: fn (Unique $rule, Get $get) => $rule->where('fakultas_id', $get('fakultas_id')),
+                    ),
                 TextInput::make('kode')
                     ->label('Kode')
                     ->maxLength(20)
