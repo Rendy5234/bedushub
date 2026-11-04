@@ -30,6 +30,11 @@ class PengaturanJenjang extends Page implements HasTable
 
     protected string $view = 'filament.pages.pengaturan-jenjang';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -72,7 +77,7 @@ class PengaturanJenjang extends Page implements HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('urutan', 'asc')
-            ->striped()
-            ->paginated([10, 25, 50, 100]);
+            ->defaultPaginationPageOption(25)
+            ->paginationPageOptions([10, 25, 50]);
     }
 }

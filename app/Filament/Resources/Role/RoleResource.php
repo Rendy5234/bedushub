@@ -19,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Override;
+use UnitEnum;
 
 class RoleResource extends Resource
 {
@@ -30,6 +31,13 @@ class RoleResource extends Resource
     use HasShieldFormComponents;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return 'Pengaturan';
+    }
 
     #[Override]
     public static function form(Schema $schema): Schema
