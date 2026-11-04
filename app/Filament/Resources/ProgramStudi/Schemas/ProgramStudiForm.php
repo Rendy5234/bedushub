@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProgramStudi\Schemas;
 
+use App\Models\JenjangPendidikan;
 use App\Models\ProgramStudi;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -31,15 +32,20 @@ class ProgramStudiForm
                     ->placeholder('Contoh: IF001'),
                 Select::make('jenjang')
                     ->label('Jenjang')
-                    ->options([
-                        'D3' => 'D3',
-                        'S1' => 'S1',
-                        'S2' => 'S2',
-                        'S3' => 'S3',
-                    ])
+                    ->options(fn (callable $get) => JenjangPendidikan::getOptionsIncludingInactive(
+                        $get('jenjang') ? [$get('jenjang')] : []
+                    )->pluck('nama', 'kode')->toArray())
                     ->required()
                     ->searchable()
-                    ->native(false),
+                    ->native(false)
+                    ->getOptionLabelUsing(function (string $value): string {
+                        $jenjang = JenjangPendidikan::where('kode', $value)->first();
+                        if ($jenjang && ! $jenjang->is_active) {
+                            return $jenjang->nama.' (Non-Aktif)';
+                        }
+
+                        return $jenjang->nama ?? $value;
+                    }),
                 Select::make('fakultas_id')
                     ->label('Fakultas')
                     ->relationship('fakultas', 'nama')
