@@ -27,7 +27,7 @@ class FakultasForm
                     ),
                 Select::make('institusi_id')
                     ->label('Institusi')
-                    ->relationship('institusi', 'nama')
+                    ->relationship('institusi', 'nama', fn ($query) => $query->where('jenis', 'PT'))
                     ->searchable()
                     ->preload()
                     ->required()

@@ -22,6 +22,9 @@ return new class extends Migration
             // Audit trail.
             $table->foreignUuid('created_by')->nullable();
             $table->foreignUuid('updated_by')->nullable();
+
+            // Composite unique constraint: nama unik per institusi
+            $table->unique(['institusi_id', 'nama']);
         });
     }
 
