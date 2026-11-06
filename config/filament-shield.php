@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Filament\Pages\PengaturanJenjang;
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -195,7 +196,7 @@ return [
             ],
         ],
         'exclude' => [
-            //
+            App\Filament\Resources\Role\RoleResource::class,
         ],
     ],
 
@@ -215,6 +216,7 @@ return [
         'prefix' => 'view',
         'exclude' => [
             Dashboard::class,
+            PengaturanJenjang::class,
         ],
     ],
 

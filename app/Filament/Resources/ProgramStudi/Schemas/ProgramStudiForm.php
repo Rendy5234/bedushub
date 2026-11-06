@@ -32,20 +32,10 @@ class ProgramStudiForm
                     ->placeholder('Contoh: IF001'),
                 Select::make('jenjang')
                     ->label('Jenjang')
-                    ->options(fn (callable $get) => JenjangPendidikan::getOptionsIncludingInactive(
-                        $get('jenjang') ? [$get('jenjang')] : []
-                    )->pluck('nama', 'kode')->toArray())
+                    ->options(fn (Get $get): array => JenjangPendidikan::getProdiJenjangOptions($get('jenjang')))
                     ->required()
                     ->searchable()
-                    ->native(false)
-                    ->getOptionLabelUsing(function (string $value): string {
-                        $jenjang = JenjangPendidikan::where('kode', $value)->first();
-                        if ($jenjang && ! $jenjang->is_active) {
-                            return $jenjang->nama.' (Non-Aktif)';
-                        }
-
-                        return $jenjang->nama ?? $value;
-                    }),
+                    ->native(false),
                 Select::make('fakultas_id')
                     ->label('Fakultas')
                     ->relationship('fakultas', 'nama')
