@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Imports\ProgramStudiImporter;
 use App\Models\Fakultas;
 use App\Models\Institusi;
+use App\Models\JenjangPendidikan;
 use App\Models\ProgramStudi;
 use Filament\Actions\Imports\Models\Import;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,7 +16,7 @@ class ProgramStudiImporterTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Siapkan data institusi + fakultas untuk kebutuhan relasi program studi.
+     * Siapkan data institusi + fakultas + jenjang untuk kebutuhan relasi program studi.
      */
     private function createFakultas(string $namaFakultas = 'Fakultas Teknik'): Fakultas
     {
@@ -31,6 +32,23 @@ class ProgramStudiImporterTest extends TestCase
             'nama' => $namaFakultas,
             'institusi_id' => $institusi->id,
         ]);
+    }
+
+    /**
+     * Buat jenjang pendidikan aktif yang dibutuhkan untuk test.
+     */
+    private function createJenjang(): void
+    {
+        JenjangPendidikan::firstOrCreate(['kode' => 'D3'], ['nama' => 'Diploma 3', 'is_active' => true, 'urutan' => 1, 'kelompok' => 'D3']);
+        JenjangPendidikan::firstOrCreate(['kode' => 'S1'], ['nama' => 'Sarjana', 'is_active' => true, 'urutan' => 2, 'kelompok' => 'S1']);
+        JenjangPendidikan::firstOrCreate(['kode' => 'S2'], ['nama' => 'Magister', 'is_active' => true, 'urutan' => 3, 'kelompok' => 'S2']);
+        JenjangPendidikan::firstOrCreate(['kode' => 'S3'], ['nama' => 'Doktor', 'is_active' => true, 'urutan' => 4, 'kelompok' => 'S3']);
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->createJenjang();
     }
 
     public function test_it_imports_new_program_studi_with_fakultas_id_resolved_from_name(): void
@@ -113,7 +131,7 @@ class ProgramStudiImporterTest extends TestCase
             ->assertHasErrors(['fakultas_id']);
 
         $this->assertSame(
-            ['Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.'],
+            ['Fakultas tidak ditemukan atau tidak milik Perguruan Tinggi (PT).'],
             $result->errors()->all(),
         );
 
@@ -199,12 +217,12 @@ class ProgramStudiImporterTest extends TestCase
             $messages['nama.required'],
         );
         $this->assertSame(
-            'Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.',
+            'Fakultas tidak ditemukan atau tidak milik Perguruan Tinggi (PT).',
             $messages['fakultas_id.required'],
         );
         $this->assertSame(
-            'Jenjang tidak valid. Gunakan: D3, S1, S2, atau S3.',
-            $messages['jenjang.in'],
+            'Jenjang tidak valid atau tidak aktif. Gunakan jenjang yang aktif: D3, S1, S2, atau S3.',
+            $messages['jenjang.exists'],
         );
 
         foreach ($messages as $message) {

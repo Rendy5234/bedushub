@@ -2,6 +2,7 @@
 
 namespace App\Filament\Imports;
 
+use App\Enums\JenisInstitusi;
 use App\Models\Institusi;
 use App\Models\Jurusan;
 use Filament\Actions\Imports\ImportColumn;
@@ -34,6 +35,7 @@ class JurusanImporter extends Importer
 
                     $institusi = Institusi::withTrashed()
                         ->where('nama', (string) $state)
+                        ->whereIn('jenis', [JenisInstitusi::Smk->value, JenisInstitusi::Sma->value])
                         ->first();
 
                     return $institusi?->id;
@@ -133,8 +135,8 @@ class JurusanImporter extends Importer
     {
         return [
             'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
-            'institusi_id.required' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
-            'institusi_id.exists' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
+            'institusi_id.required' => 'Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Jurusan (harus SMK/SMA).',
+            'institusi_id.exists' => 'Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Jurusan (harus SMK/SMA).',
         ];
     }
 

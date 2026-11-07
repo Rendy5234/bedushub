@@ -97,7 +97,7 @@ class JurusanImporterTest extends TestCase
             ->assertHasErrors(['institusi_id']);
 
         $this->assertSame(
-            ['Institusi tidak ditemukan. Periksa nama institusi pada baris ini.'],
+            ['Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Jurusan (harus SMK/SMA).'],
             $result->errors()->all(),
         );
 
@@ -160,7 +160,7 @@ class JurusanImporterTest extends TestCase
             $messages['nama.required'],
         );
         $this->assertSame(
-            'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
+            'Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Jurusan (harus SMK/SMA).',
             $messages['institusi_id.required'],
         );
 

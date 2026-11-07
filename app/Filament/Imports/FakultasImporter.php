@@ -2,6 +2,7 @@
 
 namespace App\Filament\Imports;
 
+use App\Enums\JenisInstitusi;
 use App\Models\Fakultas;
 use App\Models\Institusi;
 use Filament\Actions\Imports\ImportColumn;
@@ -31,6 +32,7 @@ class FakultasImporter extends Importer
 
                     $institusi = Institusi::withTrashed()
                         ->where('nama', (string) $state)
+                        ->where('jenis', JenisInstitusi::Pt->value)
                         ->first();
 
                     return $institusi?->id;
@@ -126,8 +128,8 @@ class FakultasImporter extends Importer
     {
         return [
             'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
-            'institusi_id.required' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
-            'institusi_id.exists' => 'Institusi tidak ditemukan. Periksa nama institusi pada baris ini.',
+            'institusi_id.required' => 'Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Fakultas (harus PT).',
+            'institusi_id.exists' => 'Institusi tidak ditemukan atau jenis institusi tidak sesuai untuk Fakultas (harus PT).',
         ];
     }
 

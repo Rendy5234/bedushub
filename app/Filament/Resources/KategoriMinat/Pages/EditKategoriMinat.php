@@ -16,14 +16,20 @@ class EditKategoriMinat extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            RestoreAction::make(),
+            RestoreAction::make()
+                ->hidden(fn (KategoriMinat $record): bool => ! $record->trashed()),
             DeleteAction::make()
-                ->hidden(fn (KategoriMinat $record): bool => $record->userMinat()->exists()
+                ->disabled(fn (KategoriMinat $record): bool => $record->userMinat()->exists()
                     || $record->lowonganMinat()->exists()
-                    || $record->pelatihanMinat()->exists()
-                )
-                ->tooltip('Tidak bisa dihapus karena sedang digunakan'),
-            ForceDeleteAction::make(),
+                    || $record->pelatihanMinat()->exists())
+                ->tooltip(fn (KategoriMinat $record): ?string => ($record->userMinat()->exists()
+                    || $record->lowonganMinat()->exists()
+                    || $record->pelatihanMinat()->exists())
+                    ? 'Tidak bisa dihapus karena sedang digunakan'
+                    : null)
+                ->hidden(fn (KategoriMinat $record): bool => $record->trashed()),
+            ForceDeleteAction::make()
+                ->hidden(fn (KategoriMinat $record): bool => ! $record->trashed()),
         ];
     }
 

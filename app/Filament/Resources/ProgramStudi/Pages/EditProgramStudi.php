@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProgramStudi\Pages;
 
 use App\Filament\Resources\ProgramStudi\ProgramStudiResource;
+use App\Models\ProgramStudi;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
@@ -15,9 +16,12 @@ class EditProgramStudi extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
-            ForceDeleteAction::make(),
-            RestoreAction::make(),
+            DeleteAction::make()
+                ->hidden(fn (ProgramStudi $record): bool => $record->trashed()),
+            ForceDeleteAction::make()
+                ->hidden(fn (ProgramStudi $record): bool => ! $record->trashed()),
+            RestoreAction::make()
+                ->hidden(fn (ProgramStudi $record): bool => ! $record->trashed()),
         ];
     }
 }

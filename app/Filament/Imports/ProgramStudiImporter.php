@@ -3,6 +3,7 @@
 namespace App\Filament\Imports;
 
 use App\Models\Fakultas;
+use App\Models\JenjangPendidikan;
 use App\Models\ProgramStudi;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Importer;
@@ -26,7 +27,18 @@ class ProgramStudiImporter extends Importer
             ImportColumn::make('jenjang')
                 ->label('Jenjang')
                 ->requiredMapping()
-                ->rules(['required', 'string', 'in:D3,S1,S2,S3']),
+                ->rules(['required', 'string', Rule::exists('jenjang_pendidikans', 'kode')->where('is_active', true)])
+                ->castStateUsing(function (mixed $state): ?string {
+                    if (! filled($state)) {
+                        return null;
+                    }
+
+                    $jenjang = JenjangPendidikan::where('kode', (string) $state)
+                        ->where('is_active', true)
+                        ->first();
+
+                    return $jenjang?->kode;
+                }),
             ImportColumn::make('fakultas_id')
                 ->label('Fakultas')
                 ->requiredMapping()
@@ -38,6 +50,7 @@ class ProgramStudiImporter extends Importer
 
                     $fakultas = Fakultas::withTrashed()
                         ->where('nama', (string) $state)
+                        ->whereHas('institusi', fn ($q) => $q->where('jenis', 'PT'))
                         ->first();
 
                     return $fakultas?->id;
@@ -139,10 +152,10 @@ class ProgramStudiImporter extends Importer
     {
         return [
             'nama.required' => 'Format CSV tidak sesuai. Pastikan dipisahkan dengan koma (,).',
-            'fakultas_id.required' => 'Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.',
-            'fakultas_id.exists' => 'Fakultas tidak ditemukan. Periksa nama fakultas pada baris ini.',
+            'fakultas_id.required' => 'Fakultas tidak ditemukan atau tidak milik Perguruan Tinggi (PT).',
+            'fakultas_id.exists' => 'Fakultas tidak ditemukan atau tidak milik Perguruan Tinggi (PT).',
             'jenjang.required' => 'Kolom jenjang tidak ditemukan. Periksa susunan CSV.',
-            'jenjang.in' => 'Jenjang tidak valid. Gunakan: D3, S1, S2, atau S3.',
+            'jenjang.exists' => 'Jenjang tidak valid atau tidak aktif. Gunakan jenjang yang aktif: D3, S1, S2, atau S3.',
         ];
     }
 

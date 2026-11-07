@@ -16,14 +16,20 @@ class EditSkill extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            RestoreAction::make(),
+            RestoreAction::make()
+                ->hidden(fn (Skill $record): bool => ! $record->trashed()),
             DeleteAction::make()
-                ->hidden(fn (Skill $record): bool => $record->userSkills()->exists()
+                ->disabled(fn (Skill $record): bool => $record->userSkills()->exists()
                     || $record->lowonganSkills()->exists()
-                    || $record->pelatihanSkills()->exists()
-                )
-                ->tooltip('Tidak bisa dihapus karena sedang digunakan'),
-            ForceDeleteAction::make(),
+                    || $record->pelatihanSkills()->exists())
+                ->tooltip(fn (Skill $record): ?string => ($record->userSkills()->exists()
+                    || $record->lowonganSkills()->exists()
+                    || $record->pelatihanSkills()->exists())
+                    ? 'Tidak bisa dihapus karena sedang digunakan'
+                    : null)
+                ->hidden(fn (Skill $record): bool => $record->trashed()),
+            ForceDeleteAction::make()
+                ->hidden(fn (Skill $record): bool => ! $record->trashed()),
         ];
     }
 
